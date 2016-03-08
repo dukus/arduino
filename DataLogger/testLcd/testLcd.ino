@@ -24,6 +24,7 @@ float baterry_voltage = 0.0;
 float r1 = 6830.0;
 float r2 = 2180.0;
 String inputString = "";
+String command = "";
 unsigned long lcd_time;
 //----------------------
 void setup()
@@ -48,7 +49,7 @@ void setup()
     return;
   }
   Serial.println("initialization done.");
- // open the file. note that only one file can be open at a time,
+  // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
   myFile = SD.open("test.txt", FILE_WRITE);
 
@@ -79,7 +80,7 @@ void setup()
     // if the file didn't open, print an error:
     Serial.println("error opening test.txt");
   }
-  
+
 }
 
 
@@ -98,23 +99,81 @@ void loop()
     }
   }
 
-  if (lcd_time!=0 && millis() - lcd_time > 5 * 1000)
+  if (lcd_time != 0 && millis() - lcd_time > 15 * 1000)
   {
     deActivateLcd();
     lcd_time = 0;
   }
 
   if (Serial3.available()) {
-    activateLcd();
-    int inByte = Serial3.read();
-    Serial.write(inByte);
+    processSerial((char)Serial3.read());
   }
 
   // read from port 0, send to port 1:
   if (Serial.available()) {
-    int inByte = Serial.read();
-    Serial3.write(inByte);
+    processSerial((char)Serial.read());
   }
+}
+
+void processSerial(char inChar)
+{
+    activateLcd();
+    // add it to the inputString:
+    inputString += inChar;
+    if (inChar == '=')
+    {
+      command = inputString;
+      inputString = "";
+    }
+    if (inChar == '\n') {
+      processCommand(command, inputString);
+      command = "";
+      inputString = "";
+    }
+}
+
+void processCommand(String cmd, String param )
+{
+  //T=YYYY:MM:DD:HH:MM:SS
+  if (cmd == "T=")
+  {
+    tmElements_t tm;
+    tm.Hour = getValue(param, ':', 3).toInt();             //set the tm structure to 23h31m30s on 13Feb2009
+    tm.Minute = getValue(param, ':', 4).toInt();
+    tm.Second = getValue(param, ':', 5).toInt();
+    tm.Day = getValue(param, ':', 2).toInt();
+    tm.Month = getValue(param, ':', 1).toInt();
+    tm.Year = getValue(param, ':', 0).toInt() ;    //tmElements_t.Year is the offset from 1970
+    setTime(tm.Hour, tm.Minute, tm.Second, tm.Day, tm.Month, tm.Year);   //set the system time to 23h31m30s on 13Feb2009
+    RTC.set(now());                     //set the RTC from the system time  }
+    Serial.println("Time set to :");
+    Serial.println(now());
+  }
+  if (cmd == "?=")
+  {
+    Serial.println("Help :");
+    Serial.println("Set time:");
+    Serial.println("T=YYYY:MM:DD:HH:mm:ss");
+  }
+ 
+}
+
+// http://stackoverflow.com/questions/9072320/split-string-into-string-array
+String getValue(String data, char separator, int index)
+{
+  int found = 0;
+  int strIndex[] = {0, -1};
+  int maxIndex = data.length() - 1;
+
+  for (int i = 0; i <= maxIndex && found <= index; i++) {
+    if (data.charAt(i) == separator || i == maxIndex) {
+      found++;
+      strIndex[0] = strIndex[1] + 1;
+      strIndex[1] = (i == maxIndex) ? i + 1 : i;
+    }
+  }
+
+  return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
 void mesureVolts()
