@@ -1,4 +1,4 @@
-
+#include <DHT.h>
 //YWROBOT
 //Compatible with the Arduino IDE 1.0
 //Library version:1.1
@@ -9,12 +9,19 @@
 #include <DS3232RTC.h>        //http://github.com/JChristensen/DS3232RTC
 #include <Time.h>             //http://playground.arduino.cc/Code/Time
 #include <Adafruit_BMP085.h>
+#include "structs.h"
+//----------------
+#define DHTPIN 49     // what digital pin we're connected to
 
-
+// Uncomment whatever type you're using!
+#define DHTTYPE DHT11   // DHT 11
+//-----------------------------------------
 
 LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
 Adafruit_BMP085 bmp;
 File myFile;
+DHT dht(DHTPIN, DHTTYPE);
+DATA data;
 //----------------------
 String time = "";
 int internTemp = 0;
@@ -41,6 +48,7 @@ void setup()
   inputString.reserve(200);
   // Print a message to the LCD.
   activateLcd();
+  dht.begin();
 
   Serial.print("Initializing SD card...");
 
@@ -95,7 +103,7 @@ void loop()
     mainDisplay(t);
     mesureVolts();
     if (second(t) == 0) {
-      internTemp = RTC.temperature() / 4.;
+      readDht();
     }
   }
 
@@ -115,25 +123,42 @@ void loop()
   }
 }
 
+void readDht()
+{
+  data.IntTemp = bmp.readTemperature();
+  data.Humidity = dht.readHumidity();
+  data.ExtTemp = dht.readTemperature();
+  data.Presure = bmp.readPressure() * 0.01;
+  // Read temperature as Celsius (the default)
+  // Check if any reads failed and exit early (to try again).
+  //  if (isnan(h) || isnan(t) || isnan(f)) {
+  //Serial.println("Failed to read from DHT sensor!");
+  //return;
+  //}
+}
+
 void processSerial(char inChar)
 {
-    activateLcd();
-    // add it to the inputString:
+  activateLcd();
+  // add it to the inputString:
+  if (inChar == '\n' || inChar == '\r') {
+    processCommand(command, inputString);
+    command = "";
+    inputString = "";
+  } else {
     inputString += inChar;
-    if (inChar == '=')
-    {
-      command = inputString;
-      inputString = "";
-    }
-    if (inChar == '\n') {
-      processCommand(command, inputString);
-      command = "";
-      inputString = "";
-    }
+
+  }
+  if (inChar == '=')
+  {
+    command = inputString;
+    inputString = "";
+  }
 }
 
 void processCommand(String cmd, String param )
 {
+  debug("Cmd=" + cmd + " param="    );
   //T=YYYY:MM:DD:HH:MM:SS
   if (cmd == "T=")
   {
@@ -149,31 +174,24 @@ void processCommand(String cmd, String param )
     Serial.println("Time set to :");
     Serial.println(now());
   }
-  if (cmd == "?=")
+  if (cmd == "D=" || param == "D")
   {
-    Serial.println("Help :");
-    Serial.println("Set time:");
-    Serial.println("T=YYYY:MM:DD:HH:mm:ss");
+    info("DATA at "+getTime( now()));
+    info("IntTemp :"+printI00(data.IntTemp, ' ')+" *C");
+    info("ExtTemp :"+printI00(data.ExtTemp, ' ')+" *C");
+    info("Presure :"+printI00(data.Presure, ' ')+" mB");
+    info("Humidity:"+printI00(data.Humidity, ' ')+" %");
+    info("==================================");
+    info("Volt1   :"+printI00(data.Volt1, ' ')+" V");
+    info("Volt2   :"+printI00(data.Volt2, ' ')+" V");
   }
- 
-}
-
-// http://stackoverflow.com/questions/9072320/split-string-into-string-array
-String getValue(String data, char separator, int index)
-{
-  int found = 0;
-  int strIndex[] = {0, -1};
-  int maxIndex = data.length() - 1;
-
-  for (int i = 0; i <= maxIndex && found <= index; i++) {
-    if (data.charAt(i) == separator || i == maxIndex) {
-      found++;
-      strIndex[0] = strIndex[1] + 1;
-      strIndex[1] = (i == maxIndex) ? i + 1 : i;
-    }
+  if (cmd == "?=" || param == "?")
+  {
+    info("Help :");
+    info("Set time:");
+    info("T=YYYY:MM:DD:HH:mm:ss");
   }
 
-  return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
 void mesureVolts()
@@ -181,24 +199,25 @@ void mesureVolts()
   int analog_value = analogRead(A2);
   temp = (analog_value * 5.0) / 1024.0;
   input_voltage = temp / (r2 / (r1 + r2));
-  analog_value = analogRead(A3);
+  data.Volt1 = analogRead(A3);
   temp = (analog_value * 5.0) / 1024.0;
-  baterry_voltage = temp / (r2 / (r1 + r2));
+  data.Volt2 = temp / (r2 / (r1 + r2));
+
 }
 
 void mainDisplay(time_t t)
 {
 
   lcd.setCursor(0, 0);
-  lcd.print("Temp =" + printI00(internTemp, ' ') + "C");
+  lcd.print("Temp =" + printI00(data.ExtTemp, ' ') + "C");
   lcd.setCursor(15, 0);
   lcd.print(getTime(t));
   lcd.setCursor(0, 1);
-  lcd.print("Pres =" + printI00(bmp.readPressure() * 0.00750061561303, ' ') + "mmHg");
+  lcd.print("Pres =" + printI00(data.Presure , ' ') + "mB " + printI00(data.Humidity , ' ') + "%");
   lcd.setCursor(0, 2);
   char buffer[10];
-  String tem = dtostrf(input_voltage, 4, 1, buffer);
-  String tem1 = dtostrf(baterry_voltage, 4, 1, buffer);
+  String tem = dtostrf(data.Volt1, 4, 1, buffer);
+  String tem1 = dtostrf(data.Volt2, 4, 1, buffer);
   lcd.print("Volts=" + tem + "V/" + tem1 + "V");
 }
 
