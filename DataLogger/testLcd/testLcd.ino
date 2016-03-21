@@ -1,3 +1,8 @@
+#include <nRF24L01.h>
+#include <printf.h>
+#include <RF24.h>
+#include <RF24_config.h>
+
 #include <DHT.h>
 //YWROBOT
 //Compatible with the Arduino IDE 1.0
@@ -21,6 +26,7 @@ LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 char
 Adafruit_BMP085 bmp;
 File myFile;
 DHT dht(DHTPIN, DHTTYPE);
+RF24 radio(47,45);
 DATA data;
 //----------------------
 String time = "";
@@ -32,7 +38,9 @@ float r1 = 6830.0;
 float r2 = 2180.0;
 String inputString = "";
 String command = "";
+bool radioNumber = 0;
 unsigned long lcd_time;
+byte addresses[][6] = {"1Node","2Node"};
 //----------------------
 void setup()
 {
@@ -49,7 +57,22 @@ void setup()
   // Print a message to the LCD.
   activateLcd();
   dht.begin();
+  
+  radio.begin();
+  radio.setPALevel(RF24_PA_LOW);
 
+  // Open a writing and reading pipe on each radio, with opposite addresses
+  if(radioNumber){
+    radio.openWritingPipe(addresses[1]);
+    radio.openReadingPipe(1,addresses[0]);
+  }else{
+    radio.openWritingPipe(addresses[0]);
+    radio.openReadingPipe(1,addresses[1]);
+  }
+  
+  // Start the radio listening for data
+  radio.startListening();
+  
   Serial.print("Initializing SD card...");
 
   if (!SD.begin(53)) {
@@ -94,6 +117,20 @@ void setup()
 
 void loop()
 {
+
+//  //==============test====================
+//      radio.stopListening();                                    // First, stop listening so we can talk.
+//    
+//    
+//    Serial.println(F("Now sending"));
+//
+//    unsigned long time = micros();                             // Take the time, and send it.  This will block until complete
+//     if (!radio.write( &time, sizeof(unsigned long) )){
+//       Serial.println(F("failed"));
+//     }
+//        
+//    radio.startListening();   
+  //======================================
   static time_t tLast;
   time_t t;
 
