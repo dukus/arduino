@@ -26,7 +26,8 @@ LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 char
 Adafruit_BMP085 bmp;
 File myFile;
 DHT dht(DHTPIN, DHTTYPE);
-RF24 radio(47,45);
+RF24 radio(45, 47);
+int msg[1];
 DATA data;
 //----------------------
 String time = "";
@@ -40,7 +41,7 @@ String inputString = "";
 String command = "";
 bool radioNumber = 0;
 unsigned long lcd_time;
-byte addresses[][6] = {"1Node","2Node"};
+byte addresses[][6] = {"MASTE", "2Node"};
 //----------------------
 void setup()
 {
@@ -57,22 +58,12 @@ void setup()
   // Print a message to the LCD.
   activateLcd();
   dht.begin();
-  
+
   radio.begin();
   radio.setPALevel(RF24_PA_LOW);
+  radio.openWritingPipe(addresses[0]);
 
-  // Open a writing and reading pipe on each radio, with opposite addresses
-  if(radioNumber){
-    radio.openWritingPipe(addresses[1]);
-    radio.openReadingPipe(1,addresses[0]);
-  }else{
-    radio.openWritingPipe(addresses[0]);
-    radio.openReadingPipe(1,addresses[1]);
-  }
-  
-  // Start the radio listening for data
-  radio.startListening();
-  
+  //===================== SD CARD
   Serial.print("Initializing SD card...");
 
   if (!SD.begin(53)) {
@@ -117,20 +108,20 @@ void setup()
 
 void loop()
 {
-
-//  //==============test====================
-//      radio.stopListening();                                    // First, stop listening so we can talk.
-//    
-//    
-//    Serial.println(F("Now sending"));
-//
-//    unsigned long time = micros();                             // Take the time, and send it.  This will block until complete
-//     if (!radio.write( &time, sizeof(unsigned long) )){
-//       Serial.println(F("failed"));
-//     }
-//        
-//    radio.startListening();   
-  //======================================
+  //
+  ////  //==============test====================
+  //      radio.stopListening();                                    // First, stop listening so we can talk.
+  //
+  //
+  //    Serial.println(F("Now sending"));
+  //
+  //    unsigned long time = micros();                             // Take the time, and send it.  This will block until complete
+  //     if (!radio.write( &time, sizeof(unsigned long) )){
+  //       Serial.println(F("failed"));
+  //     }
+  //
+  //    radio.startListening();
+  //  //======================================
   static time_t tLast;
   time_t t;
 
@@ -213,14 +204,14 @@ void processCommand(String cmd, String param )
   }
   if (cmd == "D=" || param == "D")
   {
-    info("DATA at "+getTime( now()));
-    info("IntTemp :"+printI00(data.IntTemp, ' ')+" *C");
-    info("ExtTemp :"+printI00(data.ExtTemp, ' ')+" *C");
-    info("Presure :"+printI00(data.Presure, ' ')+" mB");
-    info("Humidity:"+printI00(data.Humidity, ' ')+" %");
+    info("DATA at " + getTime( now()));
+    info("IntTemp :" + printI00(data.IntTemp, ' ') + " *C");
+    info("ExtTemp :" + printI00(data.ExtTemp, ' ') + " *C");
+    info("Presure :" + printI00(data.Presure, ' ') + " mB");
+    info("Humidity:" + printI00(data.Humidity, ' ') + " %");
     info("==================================");
-    info("Volt1   :"+printI00(data.Volt1, ' ')+" V");
-    info("Volt2   :"+printI00(data.Volt2, ' ')+" V");
+    info("Volt1   :" + printI00(data.Volt1, ' ') + " V");
+    info("Volt2   :" + printI00(data.Volt2, ' ') + " V");
   }
   if (cmd == "?=" || param == "?")
   {
@@ -228,7 +219,11 @@ void processCommand(String cmd, String param )
     info("Set time:");
     info("T=YYYY:MM:DD:HH:mm:ss");
   }
-
+  if (cmd == "V=" || param == "1")
+  {
+    msg[0] = 111;
+    radio.write(msg, 1);
+  }
 }
 
 void mesureVolts()
