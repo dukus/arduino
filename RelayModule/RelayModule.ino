@@ -25,7 +25,7 @@ int msg[1];
 byte addresses[][6] = {"MASTE", "2Node"};
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println(F("RF24/examples/GettingStarted"));
   Serial.println(F("*** PRESS 'T' to begin transmitting to the other node"));
 
@@ -33,10 +33,10 @@ void setup() {
   pinMode(RELAY2PIN, OUTPUT);
   pinMode(RELAY3PIN, OUTPUT);
   pinMode(RELAY4PIN, OUTPUT);
-  digitalWrite(RELAY1PIN, LOW);
-  digitalWrite(RELAY2PIN, LOW);
-  digitalWrite(RELAY3PIN, LOW);
-  digitalWrite(RELAY4PIN, LOW);
+  digitalWrite(RELAY1PIN, HIGH);
+  digitalWrite(RELAY2PIN, HIGH);
+  digitalWrite(RELAY3PIN, HIGH);
+  digitalWrite(RELAY4PIN, HIGH);
 
 
   radio.begin();
@@ -60,16 +60,42 @@ void loop() {
       Serial.println(msg[0]);
       if (msg[0] == 111) {
         delay(10);
-        digitalWrite(RELAY1PIN, HIGH);
-      }
-      else {
         digitalWrite(RELAY1PIN, LOW);
       }
+      if (msg[0] == 110) {
+        delay(10);
+        digitalWrite(RELAY1PIN, HIGH);
+      }      
+      if (msg[0] == 121) {
+        delay(10);
+        digitalWrite(RELAY1PIN, LOW);
+      }
+      if (msg[0] == 120) {
+        delay(10);
+        digitalWrite(RELAY1PIN, HIGH);
+      }      
+      if (msg[0] == 131) {
+        delay(10);
+        digitalWrite(RELAY1PIN, LOW);
+      }
+      if (msg[0] == 130) {
+        delay(10);
+        digitalWrite(RELAY1PIN, HIGH);
+      }      
+      if (msg[0] == 141) {
+        delay(10);
+        digitalWrite(RELAY1PIN, LOW);
+      }
+      if (msg[0] == 140) {
+        delay(10);
+        digitalWrite(RELAY1PIN, HIGH);
+      }      
+      
       delay(10);
     }
   }
   else {
-    Serial.println("No radio available");
+   // Serial.println("No radio available");
   }
 
 

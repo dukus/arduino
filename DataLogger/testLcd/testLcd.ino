@@ -219,9 +219,9 @@ void processCommand(String cmd, String param )
     info("Set time:");
     info("T=YYYY:MM:DD:HH:mm:ss");
   }
-  if (cmd == "V=" || param == "1")
+  if (cmd == "V=")
   {
-    msg[0] = 111;
+    msg[0] = param.toInt()+100;
     radio.write(msg, 1);
   }
 }
