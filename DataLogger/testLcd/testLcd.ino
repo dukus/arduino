@@ -45,64 +45,31 @@ byte addresses[][6] = {"MASTE", "2Node"};
 //----------------------
 void setup()
 {
-  lcd.init();                      // initialize the lcd
 
+  lcd.init();                      // initialize the lcd
   setSyncProvider(RTC.get);
-  //  if (!bmp.begin()) {
-  //  Serial.println("Could not find a valid BMP085 sensor, check wiring!");
-  bmp.begin();
-  // bluetooth
   Serial.begin(9600);
+  // bluetooth
   Serial3.begin(9600);
-  inputString.reserve(200);
+  inputString.reserve(200);  
+  //===================== SD CARD
+  if (!SD.begin(53)) {
+    Serial.println("SD card initialization failed.");
+    Serial3.println("SD card initialization failed.");
+  }
+    
+  debug("====Device starting======");
+  if (!bmp.begin()) {
+   error("Could not find a valid BMP085 sensor, check wiring!");
+  }
+  
   // Print a message to the LCD.
   activateLcd();
   dht.begin();
 
   radio.begin();
-  radio.setPALevel(RF24_PA_LOW);
+  //radio.setPALevel(RF24_PA_LOW);
   radio.openWritingPipe(addresses[0]);
-
-  //===================== SD CARD
-  Serial.print("Initializing SD card...");
-
-  if (!SD.begin(53)) {
-    Serial.println("initialization failed!");
-    return;
-  }
-  Serial.println("initialization done.");
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
-  myFile = SD.open("test.txt", FILE_WRITE);
-
-  // if the file opened okay, write to it:
-  if (myFile) {
-    Serial.print("Writing to test.txt...");
-    myFile.println("testing 1, 2, 3.");
-    // close the file:
-    myFile.close();
-    Serial.println("done.");
-  } else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
-  }
-
-  // re-open the file for reading:
-  myFile = SD.open("test.txt");
-  if (myFile) {
-    Serial.println("test.txt:");
-
-    // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    // close the file:
-    myFile.close();
-  } else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
-  }
-
 }
 
 
@@ -142,12 +109,12 @@ void loop()
   }
 
   if (Serial3.available()) {
-    processSerial((char)Serial3.read());
+    processSerial((char)Serial3.read(), 3);
   }
 
   // read from port 0, send to port 1:
   if (Serial.available()) {
-    processSerial((char)Serial.read());
+    processSerial((char)Serial.read(), 1);
   }
 }
 
@@ -165,12 +132,12 @@ void readDht()
   //}
 }
 
-void processSerial(char inChar)
+void processSerial(char inChar,  int port)
 {
   activateLcd();
   // add it to the inputString:
   if (inChar == '\n' || inChar == '\r') {
-    processCommand(command, inputString);
+    processCommand(command, inputString, port);
     command = "";
     inputString = "";
   } else {
@@ -184,9 +151,9 @@ void processSerial(char inChar)
   }
 }
 
-void processCommand(String cmd, String param )
+void processCommand(String cmd, String param, int port)
 {
-  debug("Cmd=" + cmd + " param="    );
+  debug("Cmd=" + cmd + " param=" + param   );
   //T=YYYY:MM:DD:HH:MM:SS
   if (cmd == "T=")
   {
@@ -204,7 +171,7 @@ void processCommand(String cmd, String param )
   }
   if (cmd == "D=" || param == "D")
   {
-    info("DATA at " + getTime( now()));
+    info("DATA at :" + printDate(now()) + ' ' + printTime(now()) );
     info("IntTemp :" + printI00(data.IntTemp, ' ') + " *C");
     info("ExtTemp :" + printI00(data.ExtTemp, ' ') + " *C");
     info("Presure :" + printI00(data.Presure, ' ') + " mB");
@@ -218,11 +185,18 @@ void processCommand(String cmd, String param )
     info("Help :");
     info("Set time:");
     info("T=YYYY:MM:DD:HH:mm:ss");
+    info("Get current data: D");
+    info("List debug data : debug");
+    info("Control relays  : V=XX");
   }
   if (cmd == "V=")
   {
-    msg[0] = param.toInt()+100;
+    msg[0] = param.toInt() + 100;
     radio.write(msg, 1);
+  }
+  if (param == "debug")
+  {
+    printFileSerial("debug.txt",port);
   }
 }
 
@@ -266,47 +240,6 @@ void deActivateLcd()
 
 
 
-//print date and time to Serial
-void printDateTime(time_t t)
-{
-  lcd.setCursor(0, 2);
-  lcd.print(printDate(t) + ' ' + printTime(t));
-}
 
-//print time to Serial
-String printTime(time_t t)
-{
-  return printI00(hour(t), ':') + printI00(minute(t), ':') + printI00(second(t), ' ');
-}
-
-//print time to Serial
-String getTime(time_t t)
-{ if (second(t) % 2 == 0) {
-    return printI00(hour(t), ':') + printI00(minute(t), ' ');
-  } else  {
-    return printI00(hour(t), ' ') + printI00(minute(t), ' ');
-  }
-}
-
-
-//print date to Serial
-String printDate(time_t t)
-{
-  String res = "";
-  res += printI00(day(t), 0);
-  return res + monthShortStr(month(t)) + String(year(t));
-}
-
-//Print an integer in "00" format (with leading zero),
-//followed by a delimiter character to Serial.
-//Input value assumed to be between 0 and 99.
-String printI00(int val, char delim)
-{
-  String res = "";
-  if (val < 10) res += '0';
-  res += String(val);
-  if (delim > 0) res += delim;
-  return res;
-}
 
 

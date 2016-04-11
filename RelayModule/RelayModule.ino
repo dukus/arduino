@@ -43,7 +43,7 @@ void setup() {
 
   // Set the PA Level low to prevent power supply related issues since this is a
   // getting_started sketch, and the likelihood of close proximity of the devices. RF24_PA_MAX is default.
-  radio.setPALevel(RF24_PA_LOW);
+  //radio.setPALevel(RF24_PA_LOW);
 
   radio.begin();
   radio.openReadingPipe(1, addresses[0]);
@@ -68,27 +68,27 @@ void loop() {
       }      
       if (msg[0] == 121) {
         delay(10);
-        digitalWrite(RELAY1PIN, LOW);
+        digitalWrite(RELAY2PIN, LOW);
       }
       if (msg[0] == 120) {
         delay(10);
-        digitalWrite(RELAY1PIN, HIGH);
+        digitalWrite(RELAY2PIN, HIGH);
       }      
       if (msg[0] == 131) {
         delay(10);
-        digitalWrite(RELAY1PIN, LOW);
+        digitalWrite(RELAY3PIN, LOW);
       }
       if (msg[0] == 130) {
         delay(10);
-        digitalWrite(RELAY1PIN, HIGH);
+        digitalWrite(RELAY3PIN, HIGH);
       }      
       if (msg[0] == 141) {
         delay(10);
-        digitalWrite(RELAY1PIN, LOW);
+        digitalWrite(RELAY4PIN, LOW);
       }
       if (msg[0] == 140) {
         delay(10);
-        digitalWrite(RELAY1PIN, HIGH);
+        digitalWrite(RELAY4PIN, HIGH);
       }      
       
       delay(10);

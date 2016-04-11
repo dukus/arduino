@@ -16,3 +16,70 @@ String getValue(String data, char separator, int index)
 
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
+
+//print date and time to Serial
+void printDateTime(time_t t)
+{
+  lcd.setCursor(0, 2);
+  lcd.print(printDate(t) + ' ' + printTime(t));
+}
+
+//print time to Serial
+String printTime(time_t t)
+{
+  return printI00(hour(t), ':') + printI00(minute(t), ':') + printI00(second(t), ' ');
+}
+
+//print time to Serial
+String getTime(time_t t)
+{ if (second(t) % 2 == 0) {
+    return printI00(hour(t), ':') + printI00(minute(t), ' ');
+  } else  {
+    return printI00(hour(t), ' ') + printI00(minute(t), ' ');
+  }
+}
+
+
+//print date to Serial
+String printDate(time_t t)
+{
+  String res = "";
+  res += printI00(day(t), 0);
+  return res + monthShortStr(month(t)) + String(year(t));
+}
+
+//Print an integer in "00" format (with leading zero),
+//followed by a delimiter character to Serial.
+//Input value assumed to be between 0 and 99.
+String printI00(int val, char delim)
+{
+  String res = "";
+  if (val < 10) res += '0';
+  res += String(val);
+  if (delim > 0) res += delim;
+  return res;
+}
+
+void printFileSerial(String file, int port)
+{
+  HardwareSerial *serial;
+  if (port = 3)
+    serial = &Serial3;
+  else
+    serial = &Serial;
+
+  myFile = SD.open(file);
+  if (myFile) {
+    serial->println(file);
+    // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+      serial->write(myFile.read());
+    }
+    // close the file:
+    myFile.close();
+  } else {
+    // if the file didn't open, print an error:
+    serial->println("error opening " + file);
+  }
+}
+
