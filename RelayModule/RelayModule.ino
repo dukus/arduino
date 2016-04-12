@@ -1,3 +1,5 @@
+#include <SpacebrewYun.h>
+
 
 /*
   Getting Started example sketch for nRF24L01+ radios
@@ -14,6 +16,11 @@
 #define RELAY2PIN  3
 #define RELAY3PIN  4
 #define RELAY4PIN  5
+#define LEDPIN  6
+#define BUTTON1PIN  A3
+#define BUTTON2PIN  A4
+#define BUTTON3PIN  A1
+#define BUTTON4PIN  A0
 
 bool radioNumber = 1;
 
@@ -23,6 +30,13 @@ int msg[1];
 /**********************************************************/
 
 byte addresses[][6] = {"MASTE", "2Node"};
+int ledState = LOW;
+unsigned long previousMillis = 0;        // will store last time LED was updated
+long interval = 1000;
+int button1State = LOW;
+int button2State = LOW;
+int button3State = LOW;
+int button4State = LOW;
 
 void setup() {
   Serial.begin(9600);
@@ -33,11 +47,27 @@ void setup() {
   pinMode(RELAY2PIN, OUTPUT);
   pinMode(RELAY3PIN, OUTPUT);
   pinMode(RELAY4PIN, OUTPUT);
+  pinMode(LEDPIN, OUTPUT);
+  pinMode(BUTTON1PIN, INPUT);
+  pinMode(BUTTON2PIN, INPUT);
+  pinMode(BUTTON3PIN, INPUT);
+  pinMode(BUTTON4PIN, INPUT);
+
+
   digitalWrite(RELAY1PIN, HIGH);
   digitalWrite(RELAY2PIN, HIGH);
   digitalWrite(RELAY3PIN, HIGH);
   digitalWrite(RELAY4PIN, HIGH);
+  digitalWrite(LEDPIN, HIGH);
+  digitalWrite(BUTTON1PIN, HIGH);
+  digitalWrite(BUTTON2PIN, HIGH);
+  digitalWrite(BUTTON3PIN, HIGH);
+  digitalWrite(BUTTON4PIN, HIGH);
 
+  button1State = digitalRead(BUTTON1PIN);
+  button2State = digitalRead(BUTTON2PIN);
+  button3State = digitalRead(BUTTON3PIN);
+  button4State = digitalRead(BUTTON4PIN);
 
   radio.begin();
 
@@ -52,6 +82,77 @@ void setup() {
 
 void loop() {
 
+  int b1 = digitalRead(BUTTON1PIN);
+  int b2 = digitalRead(BUTTON2PIN);
+  int b3 = digitalRead(BUTTON3PIN);
+  int b4 = digitalRead(BUTTON4PIN);
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    // save the last time you blinked the LED
+    previousMillis = currentMillis;
+
+    // if the LED is off turn it on and vice-versa:
+    if (ledState == LOW) {
+      ledState = HIGH;
+    } else {
+      ledState = LOW;
+    }
+
+    // set the LED with the ledState of the variable:
+    digitalWrite(LEDPIN, ledState);
+  }
+
+  if (b1 != button1State)
+  {
+    if (b1 == HIGH)
+    {
+      relayOff(1);
+    } else
+    {
+      relayOn(1);
+    }
+    button1State = b1;
+  }
+
+  if (b2 != button2State)
+  {
+    if (b2 == HIGH)
+    {
+      relayOff(2);
+    } else
+    {
+      relayOn(2);
+    }
+    button2State = b2;
+  }
+
+  if (b3 != button3State)
+  {
+    if (b3 == HIGH)
+    {
+      relayOff(3);
+    } else
+    {
+      relayOn(3);
+    }
+    button3State = b3;
+  }
+
+  if (b4 != button4State)
+  {
+    if (b4 == HIGH)
+    {
+      relayOff(4);
+    } else
+    {
+      relayOn(4);
+    }
+    button4State = b4;
+  }
+
+
+
   if (radio.available()) {
     bool done = false;
     while (!done) {
@@ -59,43 +160,35 @@ void loop() {
       done = true;
       Serial.println(msg[0]);
       if (msg[0] == 111) {
-        delay(10);
-        digitalWrite(RELAY1PIN, LOW);
+        relayOn(1);
       }
       if (msg[0] == 110) {
-        delay(10);
-        digitalWrite(RELAY1PIN, HIGH);
-      }      
+        relayOff(1);
+      }
       if (msg[0] == 121) {
-        delay(10);
-        digitalWrite(RELAY2PIN, LOW);
+        relayOn(2);
       }
       if (msg[0] == 120) {
-        delay(10);
-        digitalWrite(RELAY2PIN, HIGH);
-      }      
+        relayOff(2);
+      }
       if (msg[0] == 131) {
-        delay(10);
-        digitalWrite(RELAY3PIN, LOW);
+        relayOn(3);
       }
       if (msg[0] == 130) {
-        delay(10);
-        digitalWrite(RELAY3PIN, HIGH);
-      }      
+        relayOff(3);
+      }
       if (msg[0] == 141) {
-        delay(10);
-        digitalWrite(RELAY4PIN, LOW);
+        relayOn(4);
       }
       if (msg[0] == 140) {
-        delay(10);
-        digitalWrite(RELAY4PIN, HIGH);
-      }      
-      
+        relayOff(4);
+      }
+
       delay(10);
     }
   }
   else {
-   // Serial.println("No radio available");
+    // Serial.println("No radio available");
   }
 
 
@@ -107,9 +200,84 @@ void loop() {
     if ( c == '1') {
       digitalWrite(RELAY1PIN, HIGH);
       Serial.println("Relay on");
+      fastBlink();
     }
   }
 
 
 } // Loop
+
+void fastBlink()
+{
+  for (int i = 0; i <= 20; i++) {
+    delay(35);
+    digitalWrite(LEDPIN, LOW);
+    delay(35);
+    digitalWrite(LEDPIN, HIGH);
+  }
+}
+
+void relayOff(int relay)
+{
+  Serial.print("Relay OFF ");
+  Serial.println(relay);
+  switch (relay) {
+    case 1:
+      delay(10);
+      digitalWrite(RELAY1PIN, HIGH);
+      fastBlink();
+      break;
+    case 2:
+      delay(10);
+      digitalWrite(RELAY2PIN, HIGH);
+      fastBlink();
+      break;
+    case 3:
+      delay(10);
+      digitalWrite(RELAY3PIN, HIGH);
+      fastBlink();
+      break;
+    case 4:
+      delay(10);
+      digitalWrite(RELAY4PIN, HIGH);
+      fastBlink();
+      break;
+    default:
+      // if nothing else matches, do the default
+      // default is optional
+      break;
+  }
+}
+
+void relayOn(int relay)
+{
+  Serial.print("Relay ON ");
+  Serial.println(relay);
+  switch (relay) {
+    case 1:
+      delay(10);
+      digitalWrite(RELAY1PIN, LOW);
+      fastBlink();
+      break;
+    case 2:
+      delay(10);
+      digitalWrite(RELAY2PIN, LOW);
+      fastBlink();
+      break;
+    case 3:
+      delay(10);
+      digitalWrite(RELAY3PIN, LOW);
+      fastBlink();
+      break;
+    case 4:
+      delay(10);
+      digitalWrite(RELAY4PIN, LOW);
+      fastBlink();
+      break;
+    default:
+      // if nothing else matches, do the default
+      // default is optional
+      break;
+  }
+}
 
