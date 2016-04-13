@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+
 #include <nRF24L01.h>
 #include <printf.h>
 #include <RF24.h>
@@ -29,6 +31,9 @@ DHT dht(DHTPIN, DHTTYPE);
 RF24 radio(45, 47);
 int msg[1];
 DATA data;
+SETTINGS settings = {{0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0}, CONFIG_VERSION};
+// set to 1 for bluetooth configuration
+int serialMod = 0;
 //----------------------
 String time = "";
 int internTemp = 0;
@@ -50,21 +55,22 @@ void setup()
   setSyncProvider(RTC.get);
   Serial.begin(9600);
   // bluetooth
-  Serial3.begin(9600);
-  inputString.reserve(200);  
+  Serial3.begin(57600);
+  inputString.reserve(200);
   //===================== SD CARD
   if (!SD.begin(53)) {
     Serial.println("SD card initialization failed.");
     Serial3.println("SD card initialization failed.");
   }
-    
+
   debug("====Device starting======");
   if (!bmp.begin()) {
-   error("Could not find a valid BMP085 sensor, check wiring!");
+    error("Could not find a valid BMP085 sensor, check wiring!");
   }
-  
+
   // Print a message to the LCD.
   activateLcd();
+  loadConfig();
   dht.begin();
 
   radio.begin();
@@ -75,20 +81,6 @@ void setup()
 
 void loop()
 {
-  //
-  ////  //==============test====================
-  //      radio.stopListening();                                    // First, stop listening so we can talk.
-  //
-  //
-  //    Serial.println(F("Now sending"));
-  //
-  //    unsigned long time = micros();                             // Take the time, and send it.  This will block until complete
-  //     if (!radio.write( &time, sizeof(unsigned long) )){
-  //       Serial.println(F("failed"));
-  //     }
-  //
-  //    radio.startListening();
-  //  //======================================
   static time_t tLast;
   time_t t;
 
@@ -109,12 +101,18 @@ void loop()
   }
 
   if (Serial3.available()) {
-    processSerial((char)Serial3.read(), 3);
+    if (serialMod == 1)
+      Serial.print((char)Serial3.read());
+    else
+      processSerial((char)Serial3.read(), 3);
   }
 
   // read from port 0, send to port 1:
   if (Serial.available()) {
-    processSerial((char)Serial.read(), 1);
+    if (serialMod == 1)
+      Serial3.print((char)Serial.read());
+    else
+      processSerial((char)Serial.read(), 1);
   }
 }
 
@@ -169,6 +167,32 @@ void processCommand(String cmd, String param, int port)
     Serial.println("Time set to :");
     Serial.println(now());
   }
+  if (param == "S")
+  {
+    out("==Relay 1==", port);
+    printState(settings.Relay1, port);
+    out("==Relay 2==", port);
+    printState(settings.Relay2, port);
+    out("==Relay 3==", port);
+    printState(settings.Relay3, port);
+    out("==Relay 4==", port);
+    printState(settings.Relay4, port);
+  }
+
+  if (cmd == "S=")
+  {
+    int r = getValue(param, ':', 0).toInt() ;
+    if (r == 1)
+    {
+      for (int i = 0; i < 5; i++)
+      {
+        settings.Relay1[i] = getValue(param, ':', i + 1).toInt();
+        Serial.println( (byte)settings.Relay1[i] );
+      }
+      printState(settings.Relay1, port);
+    }
+    saveConfig();
+  }
   if (cmd == "D=" || param == "D")
   {
     info("DATA at :" + printDate(now()) + ' ' + printTime(now()) );
@@ -188,6 +212,8 @@ void processCommand(String cmd, String param, int port)
     info("Get current data: D");
     info("List debug data : debug");
     info("Control relays  : V=XX");
+    info("Shedule relay    :");
+    info("S=R:S:D:HH:MM:LL");
   }
   if (cmd == "V=")
   {
@@ -196,7 +222,7 @@ void processCommand(String cmd, String param, int port)
   }
   if (param == "debug")
   {
-    printFileSerial("debug.txt",port);
+    printFileSerial("debug.txt", port);
   }
 }
 
@@ -238,7 +264,41 @@ void deActivateLcd()
   lcd.noBacklight();
 }
 
+//print date and time to Serial
+void printDateTime(time_t t)
+{
+  lcd.setCursor(0, 2);
+  lcd.print(printDate(t) + ' ' + printTime(t));
+}
 
+void loadConfig() {
+  // To make sure there are settings, and they are YOURS!
+  // If nothing is found it will use the default settings.
+  if (//EEPROM.read(CONFIG_START + sizeof(settings) - 1) == settings.version_of_program[3] // this is '\0'
+    EEPROM.read(CONFIG_START + sizeof(settings) - 2) == settings.version_of_program[2] &&
+    EEPROM.read(CONFIG_START + sizeof(settings) - 3) == settings.version_of_program[1] &&
+    EEPROM.read(CONFIG_START + sizeof(settings) - 4) == settings.version_of_program[0])
+  { // reads settings from EEPROM
+    for (unsigned int t = 0; t < sizeof(settings); t++)
+      *((char*)&settings + t) = EEPROM.read(CONFIG_START + t);
+  } else {
+    // settings aren't valid! will overwrite with default settings
+    error("Invalid settings");
+    saveConfig();
+  }
+}
+
+void saveConfig() {
+  for (unsigned int t = 0; t < sizeof(settings); t++)
+  { // writes to EEPROM
+    EEPROM.write(CONFIG_START + t, *((char*)&settings + t));
+    // and verifies the data
+    if (EEPROM.read(CONFIG_START + t) != *((char*)&settings + t))
+    {
+      // error writing to EEPROM
+    }
+  }
+}
 
 
 

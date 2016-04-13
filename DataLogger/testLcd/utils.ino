@@ -17,12 +17,6 @@ String getValue(String data, char separator, int index)
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
-//print date and time to Serial
-void printDateTime(time_t t)
-{
-  lcd.setCursor(0, 2);
-  lcd.print(printDate(t) + ' ' + printTime(t));
-}
 
 //print time to Serial
 String printTime(time_t t)
@@ -62,12 +56,7 @@ String printI00(int val, char delim)
 
 void printFileSerial(String file, int port)
 {
-  HardwareSerial *serial;
-  if (port = 3)
-    serial = &Serial3;
-  else
-    serial = &Serial;
-
+  HardwareSerial *serial = GetSerial(port);
   myFile = SD.open(file);
   if (myFile) {
     serial->println(file);
@@ -81,5 +70,34 @@ void printFileSerial(String file, int port)
     // if the file didn't open, print an error:
     serial->println("error opening " + file);
   }
+}
+
+HardwareSerial* GetSerial(int port )
+{
+  if (port == 3)
+    return &Serial3;
+  else
+    return &Serial;
+}
+
+void printState(char Relay[7], int port )
+{
+  HardwareSerial *serial = GetSerial(port);
+  serial->print("Enabled ");
+  serial->println((byte)Relay[0] );
+  serial->print("Start Days " );
+  serial->println((byte)Relay[1] );
+  serial->print("Start Hour " );
+  serial->print((byte)Relay[2] );
+  serial->print(":" );
+  serial->println((byte)Relay[3] );
+  serial->print("Run time M ");
+  serial->println((byte)Relay[4] );
+}
+
+void out(String string, int port )
+{
+  HardwareSerial *serial = GetSerial(port);
+  serial->println(string);
 }
 
