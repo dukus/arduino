@@ -91,8 +91,12 @@ void printState(char Relay[7], int port )
   serial->print((byte)Relay[2] );
   serial->print(":" );
   serial->println((byte)Relay[3] );
-  serial->print("Run time M ");
-  serial->println((byte)Relay[4] );
+  serial->print("Stop  Hour " );
+  serial->print((byte)Relay[4] );
+  serial->print(":" );
+  serial->println((byte)Relay[5] );
+  serial->print("Run flaag");
+  serial->println((byte)Relay[6] );
 }
 
 void out(String string, int port )

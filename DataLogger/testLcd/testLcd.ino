@@ -34,6 +34,7 @@ DATA data;
 SETTINGS settings = {{0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0}, CONFIG_VERSION};
 // set to 1 for bluetooth configuration
 int serialMod = 0;
+String last_error = "";
 //----------------------
 String time = "";
 int internTemp = 0;
@@ -61,6 +62,7 @@ void setup()
   if (!SD.begin(53)) {
     Serial.println("SD card initialization failed.");
     Serial3.println("SD card initialization failed.");
+    last_error = "SD card initialization failed.";
   }
 
   debug("====Device starting======");
@@ -87,12 +89,17 @@ void loop()
   t = now();
   if (t != tLast) {
     tLast = t;
-    mainDisplay(t);
     mesureVolts();
     if (second(t) == 0) {
       readDht();
+      executeShedule(t, settings.Relay1, 1);
+      executeShedule(t, settings.Relay2, 2);
+      executeShedule(t, settings.Relay3, 3);
+      executeShedule(t, settings.Relay4, 4);
     }
+    mainDisplay(t);
   }
+
 
   if (lcd_time != 0 && millis() - lcd_time > 15 * 1000)
   {
@@ -114,6 +121,26 @@ void loop()
     else
       processSerial((char)Serial.read(), 1);
   }
+}
+
+void executeShedule(time_t t, char Relay[7], int relay)
+{
+  if (Relay[0] == 0  )
+    return;
+  if (Relay[1] == 1 && day(t) % 2 != 1 )
+    return;
+  if (hour(t)>= (byte)Relay[2]   && minute(t) >= (byte)Relay[3]  && hour(t) <= (byte)Relay[4]  &&  minute(t)<= (byte)Relay[5]   )
+  {
+    msg[0] = (relay * 10) + 100 + 1;
+    radio.write(msg, 1);
+    last_error = "Relay " + String(relay ) + " started   ";
+  } else
+  {
+    msg[0] = (relay * 10) + 100 ;
+    radio.write(msg, 1);
+    last_error = "Relay " + String(relay ) + " stoped    ";
+  }
+  Serial.print(last_error);
 }
 
 void readDht()
@@ -184,7 +211,7 @@ void processCommand(String cmd, String param, int port)
     int r = getValue(param, ':', 0).toInt() ;
     if (r == 1)
     {
-      for (int i = 0; i < 5; i++)
+      for (int i = 0; i < 7; i++)
       {
         settings.Relay1[i] = getValue(param, ':', i + 1).toInt();
         Serial.println( (byte)settings.Relay1[i] );
@@ -213,7 +240,10 @@ void processCommand(String cmd, String param, int port)
     info("List debug data : debug");
     info("Control relays  : V=XX");
     info("Shedule relay    :");
-    info("S=R:S:D:HH:MM:LL");
+    info("S=R:S:D:HH:MM:HH:MM:FF");
+    info("  S = 0 - Mindenap");
+    info("  S = 1 - Paros");
+    info("  S = 2 - Paratlan");
   }
   if (cmd == "V=")
   {
@@ -251,6 +281,8 @@ void mainDisplay(time_t t)
   String tem = dtostrf(data.Volt1, 4, 1, buffer);
   String tem1 = dtostrf(data.Volt2, 4, 1, buffer);
   lcd.print("Volts=" + tem + "V/" + tem1 + "V");
+  lcd.setCursor(0, 3);
+  lcd.print(last_error);
 }
 
 void activateLcd()
