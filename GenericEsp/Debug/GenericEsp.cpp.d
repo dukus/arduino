@@ -33,6 +33,7 @@ C:\Users\Dukus\AppData\Local\Temp\VMicroBuilds\GenericEsp\esp8266_nodemcuv2\Gene
  C:\Users\Dukus\AppData\Local\arduino15\packages\esp8266\hardware\esp8266\2.3.0\cores\esp8266/debug.h \
  C:\Users\Dukus\AppData\Local\arduino15\packages\esp8266\hardware\esp8266\2.3.0\variants\nodemcu/pins_arduino.h \
  C:\Users\Dukus\AppData\Local\arduino15\packages\esp8266\hardware\esp8266\2.3.0\variants\nodemcu/../generic/common.h \
+ C:\Users\Dukus\Documents\Arduino\libraries\EasyTransfer/EasyTransfer.h \
  C:\Users\Dukus\AppData\Local\Temp\VMicroBuilds\GenericEsp\esp8266_nodemcuv2\WifiUtil.h \
  C:\Users\Dukus\AppData\Local\arduino15\packages\esp8266\hardware\esp8266\2.3.0\libraries\ESP8266WebServer\src/ESP8266WebServer.h \
  C:\Users\Dukus\AppData\Local\arduino15\packages\esp8266\hardware\esp8266\2.3.0\libraries\ESP8266WiFi\src/ESP8266WiFi.h \

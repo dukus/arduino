@@ -2,15 +2,15 @@
 
 int testWifi(void) {
 	int c = 0;
-	Serial.println("Waiting for Wifi to connect");
+	//Serial.println("Waiting for Wifi to connect");
 	while (c < 20) {
 		if (WiFi.status() == WL_CONNECTED) { return(20); }
 		delay(500);
 		//Serial.print(WiFi.status());
 		c++;
-		Serial.print(".");
+		//Serial.print(".");
 	}
-	Serial.println("Connect timed out, opening AP");
+	//Serial.println("Connect timed out, opening AP");
 	return(10);
 }
 
@@ -42,10 +42,10 @@ void handleRoot() {
 	s += "<label>Client Id: </label><input name='clientid' length=32 value=\"" + String(settings.clientId) + "\"><br><br><input type='submit'></form>";
 	s += "<p>";
 	s += "<a href=\"/restart\">Restart device</a>";
-	s += "<HR>";
-	s += "<button  onclick=\"httpGet('/ledon')\">Relay On</button><br><br>";
-	s += "<button  onclick=\"httpGet('/ledoff')\">Relay Off</button>";
-	s += "<HR>";
+	//s += "<HR>";
+	//s += "<button  onclick=\"httpGet('/ledon')\">Relay On</button><br><br>";
+	//s += "<button  onclick=\"httpGet('/ledoff')\">Relay Off</button>";
+	//s += "<HR>";
 	s += "Last error :" + last_error;
 	s += "</body>";
 	s += "</html>\r\n\r\n";
@@ -76,27 +76,19 @@ void launchWeb()
 	WiFi.disconnect();
 	delay(100);
 	int n = WiFi.scanNetworks();
-	Serial.println("scan done");
+	//Serial.println("scan done");
 	if (n == 0)
-		Serial.println("no networks found");
+		//Serial.println("no networks found");
 	else
 	{
-		Serial.print(n);
-		Serial.println(" networks found");
+		//Serial.print(n);
+		//Serial.println(" networks found");
 		for (int i = 0; i < n; ++i)
 		{
-			// Print SSID and RSSI for each network found
-			Serial.print(i + 1);
-			Serial.print(": ");
-			Serial.print(WiFi.SSID(i));
-			Serial.print(" (");
-			Serial.print(WiFi.RSSI(i));
-			Serial.print(")");
-			Serial.println((WiFi.encryptionType(i) == ENC_TYPE_NONE) ? " " : "*");
 			delay(10);
 		}
 	}
-	Serial.println("");
+	//Serial.println("");
 	st = "";
 	for (int i = 0; i < n; ++i)
 	{
@@ -121,11 +113,11 @@ void launchWeb()
 	strcat(charBuf, settings.clientId);
 
 	WiFi.softAP(charBuf);
-	Serial.print("IP address: ");
-	Serial.println(WiFi.softAPIP());
+	//Serial.print("IP address: ");
+	//Serial.println(WiFi.softAPIP());
 
 	if (MDNS.begin("esp8266")) {
-		Serial.println("MDNS responder started");
+		//Serial.println("MDNS responder started");
 	}
 
 	server.on("/", handleRoot);
@@ -133,7 +125,7 @@ void launchWeb()
 	server.on("/a", handleSettings);
 	server.onNotFound(handleNotFound);
 	server.begin();
-	Serial.println("HTTP server started");
+	//Serial.println("HTTP server started");
 }
 
 void handleSettings() {
