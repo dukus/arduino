@@ -13,8 +13,8 @@
 struct DATA_STRUCTURE {
 	char topic[100];
 	byte payload[100];
-	unsigned int length;
-	byte flag;
+	uint16 length;
+	byte flag;	
 };
 
 DATA_STRUCTURE rxdata;
@@ -44,7 +44,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
 	txdata.payload[length] = 0;
 	txdata.length = length;
 
-	//Serial.println(txdata.topic);
 	//Serial.println((char*)txdata.payload);
 	//Serial.println(txdata.length);
 
@@ -73,7 +72,6 @@ void reconnect() {
 		}
 		else {
 			c++;
-			Serial.println(c);
 			if (c > 10)
 			{
 				wifiMode = 0;
@@ -109,6 +107,8 @@ void setup()
 	
 	client.setServer(settings.mqttServer, 1883);
 	client.setCallback(callback);
+	strcat(txdata.topic, "start");
+	ETout.sendData();
 }
 
 void loop()
@@ -123,7 +123,23 @@ void loop()
 		if (!client.connected()) {
 			reconnect();
 		}
-		if (wifiMode != 0)
+		if (wifiMode != 0) {
 			client.loop();
+			//if (Serial.available()) {
+			//	if (digitalRead(2) == 0)
+			//		digitalWrite(2, 1);
+			//	else
+			//		digitalWrite(2, 0);
+			//}
+			
+			if (ETin.receiveData())
+			{
+				message_buff[0] = 0;
+				strcat(message_buff, settings.clientId);
+				strcat(message_buff, "/");
+				strcat(message_buff, rxdata.topic);
+				client.publish(message_buff, rxdata.payload, rxdata.length);
+			}
+		}
 	}
 }
