@@ -19,6 +19,8 @@ SoftwareSerial mySerial(7, 8);
 const int relayPin = 6;
 const int flowSensorPin1 = 2;
 const int flowSensorPin2 = 3;
+const int levelPin1 = 4;
+const int levelPin2 = 5;
 //-------------------------
 volatile long flowRpm1;
 volatile long flowRpm2;
@@ -59,12 +61,16 @@ void setup()
 	ETout.begin(details(txdata), &mySerial);
 
 	pinMode(relayPin, OUTPUT);
+	pinMode(levelPin1, INPUT);
+	pinMode(levelPin2, INPUT);
+
 	pumpOff();
 	attachInterrupt(digitalPinToInterrupt(flowSensorPin1), rpm1, RISING);
 	attachInterrupt(digitalPinToInterrupt(flowSensorPin2), rpm2, RISING);
 
-    // delay startup until esp started
+	// delay startup until esp started
 	Send("Status", "Started");
+	SendAll();
 	sei();
 }
 
@@ -82,13 +88,9 @@ void loop()
 		oldFlowRpm2 = flowRpm2;
 	}
 
-	if (millis() - lastMillis > 45000 || millis()<lastMillis)
+	if (millis() - lastMillis > 30000 || millis() < lastMillis)
 	{
-		Serial.println(flowRpm1);
-		Serial.println(flowRpm2);
-		lastMillis = millis();
-		Send("status/flow1", flowRpm1);
-		Send("status/flow2", flowRpm2);
+		SendAll();
 	}
 
 	if (ETin.receiveData())
@@ -114,15 +116,32 @@ void loop()
 		}
 	}
 
-  /* add main program code here */
+	/* add main program code here */
 
+}
+
+void SendAll()
+{
+	Serial.println(flowRpm1);
+	Serial.println(flowRpm2);
+	lastMillis = millis();
+	Send("status/flow1", flowRpm1);
+	Send("status/flow2", flowRpm2);
+	if (digitalRead(levelPin1) == HIGH)
+		Send("status/level1", "ON");
+	else
+		Send("status/level1", "OFF");
+	if (digitalRead(levelPin2) == HIGH)
+		Send("status/level2", "ON");
+	else
+		Send("status/level2", "OFF");
 }
 
 void Send(char* topic, char* payload)
 {
 	txdata.length = strlen(payload);
 	strcpy(txdata.topic, topic);
-	memcpy(txdata.payload, payload, txdata.length+1);
+	memcpy(txdata.payload, payload, txdata.length + 1);
 	ETout.sendData();
 }
 
