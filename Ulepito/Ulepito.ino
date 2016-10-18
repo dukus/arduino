@@ -1,5 +1,7 @@
+#include <NewPing.h>
 #include <SoftwareSerial.h>
 #include <SoftEasyTransfer.h>
+
 
 
 struct DATA_STRUCTURE {
@@ -15,6 +17,9 @@ DATA_STRUCTURE txdata;
 SoftEasyTransfer ETin, ETout;
 
 SoftwareSerial mySerial(7, 8);
+NewPing sonar1(A0, A1, 200);
+NewPing sonar2(A2, A3, 200);
+
 //-------PINS--------------
 const int relayPin = 6;
 const int flowSensorPin1 = 2;
@@ -88,7 +93,7 @@ void loop()
 		oldFlowRpm2 = flowRpm2;
 	}
 
-	if (millis() - lastMillis > 30000 || millis() < lastMillis)
+	if (millis() - lastMillis > 5000 || millis() < lastMillis)
 	{
 		SendAll();
 	}
@@ -135,6 +140,10 @@ void SendAll()
 		Send("status/level2", "ON");
 	else
 		Send("status/level2", "OFF");
+	
+	Send("status/sonar1", sonar1.ping_cm());
+	Send("status/sonar2", sonar2.ping_cm());
+	
 }
 
 void Send(char* topic, char* payload)
