@@ -125,13 +125,6 @@ void loop()
 		}
 		if (wifiMode != 0) {
 			client.loop();
-			//if (Serial.available()) {
-			//	if (digitalRead(2) == 0)
-			//		digitalWrite(2, 1);
-			//	else
-			//		digitalWrite(2, 0);
-			//}
-			
 			if (ETin.receiveData())
 			{
 				message_buff[0] = 0;
