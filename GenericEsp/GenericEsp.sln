@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Ulepito", "..\Ulepito\Ulepi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Relay1", "..\Relay1\Relay1.vcxproj", "{FEEC8373-AF65-4240-8778-77A9466F131E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Solar", "..\Solar\Solar.vcxproj", "{22818AA9-83DA-4F29-A849-1F69B99DECCD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -27,6 +29,10 @@ Global
 		{FEEC8373-AF65-4240-8778-77A9466F131E}.Debug|x86.Build.0 = Debug|Win32
 		{FEEC8373-AF65-4240-8778-77A9466F131E}.Release|x86.ActiveCfg = Release|Win32
 		{FEEC8373-AF65-4240-8778-77A9466F131E}.Release|x86.Build.0 = Release|Win32
+		{22818AA9-83DA-4F29-A849-1F69B99DECCD}.Debug|x86.ActiveCfg = Debug|Win32
+		{22818AA9-83DA-4F29-A849-1F69B99DECCD}.Debug|x86.Build.0 = Debug|Win32
+		{22818AA9-83DA-4F29-A849-1F69B99DECCD}.Release|x86.ActiveCfg = Release|Win32
+		{22818AA9-83DA-4F29-A849-1F69B99DECCD}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

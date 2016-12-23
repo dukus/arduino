@@ -41,7 +41,8 @@ void handleRoot() {
 	s += "<label>MQTT server: </label><input name='mqtt' length=32 value=\"" + String(settings.mqttServer) + "\"><br><br>";
 	s += "<label>Client Id: </label><input name='clientid' length=32 value=\"" + String(settings.clientId) + "\"><br><br><input type='submit'></form>";
 	s += "<p>";
-	s += "<a href=\"/restart\">Restart device</a>";
+	s += "<a href=\"/restart\">Restart device</a><br>";
+	s += "<a href=\"/update\">Update firmware</a>";
 	//s += "<HR>";
 	//s += "<button  onclick=\"httpGet('/ledon')\">Relay On</button><br><br>";
 	//s += "<button  onclick=\"httpGet('/ledoff')\">Relay Off</button>";
@@ -108,6 +109,7 @@ void launchWeb()
 		//Serial.println("MDNS responder started");
 	}
 
+	httpUpdater.setup(&server);
 	server.on("/", handleRoot);
 	server.on("/restart", []() { ESP.restart(); });
 	server.on("/a", handleSettings);

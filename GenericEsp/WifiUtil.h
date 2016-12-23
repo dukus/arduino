@@ -10,10 +10,12 @@
 #endif
 
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPUpdateServer.h>
 
 String st;
 String last_error;
 ESP8266WebServer server(80);
+ESP8266HTTPUpdateServer httpUpdater;
 
 
 void handleRoot();
