@@ -1,3 +1,5 @@
+#include <LiquidCrystal_I2C.h>
+#include <Adafruit_BMP085.h>
 #include <DHT.h>
 #include <SoftwareSerial.h>
 #include <SoftEasyTransfer.h>
@@ -20,6 +22,8 @@ SoftEasyTransfer ETin, ETout;
 SoftwareSerial mySerial(7, 8);
 
 DHT dht(DHTPIN, DHTTYPE);
+Adafruit_BMP085 bmp;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 //-------PINS--------------
 const int relayPin = 6;
@@ -61,7 +65,14 @@ void setup()
 	pumpOff();
 	dht.begin();
 
+	if (!bmp.begin()) {
+		Serial.println("Could not find a valid BMP085 sensor, check wiring!");	
+	}
 
+	lcd.init();
+	lcd.backlight();
+	lcd.clear();
+	lcd.print("Started");
 	// delay startup until esp started
 	Send("Status", "Started");
 	SendAll();	
@@ -123,6 +134,19 @@ void SendAll()
 		Serial.println(" *C ");
 
 	}
+
+	Serial.print("Temperature = ");
+	Serial.print(bmp.readTemperature());
+	Serial.println(" *C");
+
+	Serial.print("Pressure = ");
+	Serial.print(bmp.readPressure());
+	Serial.println(" Pa");
+
+	Serial.print("Pressure at sealevel (calculated) = ");
+	Serial.print(bmp.readSealevelPressure());
+	Serial.println(" Pa");
+
 	Send("status/inttemp", (int)GetTemp());
 }
 
