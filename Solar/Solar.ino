@@ -6,6 +6,8 @@
 
 #define DHTPIN 7 
 #define DHTTYPE DHT11
+#define VOLTPIN A7 
+#define AMPPIN A6 
 
 struct DATA_STRUCTURE {
 	char topic[100];
@@ -66,7 +68,7 @@ void setup()
 	dht.begin();
 
 	if (!bmp.begin()) {
-		Serial.println("Could not find a valid BMP085 sensor, check wiring!");	
+		Serial.println("Could not find a valid BMP085 sensor, check wiring!");
 	}
 
 	lcd.init();
@@ -75,7 +77,7 @@ void setup()
 	lcd.print("Started");
 	// delay startup until esp started
 	Send("Status", "Started");
-	SendAll();	
+	SendAll();
 }
 
 void loop()
@@ -121,7 +123,7 @@ void SendAll()
 {
 	float t = dht.readTemperature();
 	float h = dht.readHumidity();
-	if (isnan(h) || isnan(t) ) {
+	if (isnan(h) || isnan(t)) {
 		Serial.println("Failed to read from DHT sensor!");
 	}
 	else
@@ -148,6 +150,20 @@ void SendAll()
 	Serial.println(" Pa");
 
 	Send("status/inttemp", (int)GetTemp());
+
+	int sensorValue = getVPP(VOLTPIN);
+	// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
+	float voltage = sensorValue *(5.0/1024.0) *5;
+	// print out the value you read:
+	Serial.print("Voltage ");
+	Serial.println(voltage);
+
+	sensorValue = getVPP(AMPPIN);
+	// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
+	float amp = ((sensorValue *(5.0 / 1024.0)) - 2.5) / 0.066;
+	// print out the value you read:
+	Serial.print("Amper ");
+	Serial.println(amp);
 }
 
 void Send(char* topic, char* payload)
@@ -165,6 +181,20 @@ void Send(char* topic, int payload)
 	char intStr[3];
 	itoa(payload, intStr, 10);
 	Send(topic, intStr);
+}
+
+float getVPP(int sensorIn)
+{
+	unsigned int x = 0;
+	float AcsValue = 0.0, Samples = 0.0, AvgAcs = 0.0, AcsValueF = 0.0;
+
+	for (int x = 0; x < 150; x++) { //Get 150 samples
+		AcsValue = analogRead(sensorIn);     //Read current sensor values   
+		Samples = Samples + AcsValue;  //Add samples together
+		delay(3); // let ADC settle before next sample 3ms
+	}
+	AvgAcs = Samples / 150.0;//Taking Average of Samples
+	return AvgAcs;
 }
 
 double GetTemp(void)
