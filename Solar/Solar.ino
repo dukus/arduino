@@ -8,6 +8,7 @@
 #define DHTTYPE DHT11
 #define VOLTPIN A7 
 #define AMPPIN A6 
+#define INVOLTPIN A0 
 
 struct DATA_STRUCTURE {
 	char topic[100];
@@ -91,17 +92,17 @@ void loop()
 		{
 			SendAll();
 		}
-		if (strcmp(rxdata.topic, "pump") == 0) {
-			Serial.println("changing");
-			if (rxdata.payload[0] == '1')
-			{
-				pumpOn();
-			}
-			else
-			{
-				pumpOff();
-			}
-		}
+		//if (strcmp(rxdata.topic, "pump") == 0) {
+		//	Serial.println("changing");
+		//	if (rxdata.payload[0] == '1')
+		//	{
+		//		pumpOn();
+		//	}
+		//	else
+		//	{
+		//		pumpOff();
+		//	}
+		//}
 	}
 	if (millis() - lastPingMillis > 1000 || millis() < lastPingMillis)
 	{
@@ -130,9 +131,11 @@ void SendAll()
 	{
 		Serial.print("Humidity: ");
 		Serial.print(h);
+		Send("status/humidity", h); 
 		Serial.print(" %\t");
 		Serial.print("Temperature: ");
 		Serial.print(t);
+		Send("status/temperature0", t);
 		Serial.println(" *C ");
 
 	}
@@ -140,13 +143,15 @@ void SendAll()
 	Serial.print("Temperature = ");
 	Serial.print(bmp.readTemperature());
 	Serial.println(" *C");
+	Send("status/temperature1",(int)bmp.readPressure());
 
 	Serial.print("Pressure = ");
 	Serial.print(bmp.readPressure());
 	Serial.println(" Pa");
+	Send("status/pressure", (int)bmp.readPressure());
 
 	Serial.print("Pressure at sealevel (calculated) = ");
-	Serial.print(bmp.readSealevelPressure());
+	Serial.print((int)bmp.readSealevelPressure());
 	Serial.println(" Pa");
 
 	Send("status/inttemp", (int)GetTemp());
@@ -157,13 +162,24 @@ void SendAll()
 	// print out the value you read:
 	Serial.print("Voltage ");
 	Serial.println(voltage);
+	Send("status/voltage", voltage);
 
+	sensorValue = getVPP(INVOLTPIN);
+	// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
+	voltage = sensorValue *(5.0 / 1024.0) * 5;
+	// print out the value you read:
+	Serial.print("In Voltage ");
+	Serial.println(voltage);
+	Send("status/batteryvoltage", voltage);
+	
 	sensorValue = getVPP(AMPPIN);
 	// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
 	float amp = ((sensorValue *(5.0 / 1024.0)) - 2.5) / 0.066;
 	// print out the value you read:
 	Serial.print("Amper ");
 	Serial.println(amp);
+	Send("status/amper", amp);
+
 }
 
 void Send(char* topic, char* payload)
@@ -180,6 +196,13 @@ void Send(char* topic, int payload)
 {
 	char intStr[3];
 	itoa(payload, intStr, 10);
+	Send(topic, intStr);
+}
+
+void Send(char* topic, float payload)
+{
+	char intStr[10];
+	dtostrf(payload, 4, 2, intStr);
 	Send(topic, intStr);
 }
 
