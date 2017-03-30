@@ -1,28 +1,15 @@
-#include <LiquidCrystal_I2C.h>
-#include <Adafruit_BMP085.h>
-#include <DHT.h>
 #include <SoftwareSerial.h>
 #include <SoftEasyTransfer.h>
+#include <ModbusMaster.h>
 
 #define DHTPIN 7 
 #define DHTTYPE DHT11
 #define VOLTPIN A7 
-#define AMPPIN A6 
+#define AMPPIN A7 
 #define INVOLTPIN A0 
 #define BUTTONPIN 11
-#define RELAY1PIN 2
+#define RELAY1PIN 3
 #define RELAY2PIN 3
-
-byte wifiChar[8] = {
-	0b00001,
-	0b00000,
-	0b00011,
-	0b00000,
-	0b00111,
-	0b00000,
-	0b01111,
-	0b11111
-};
 
 struct DATA_STRUCTURE {
 	char topic[100];
@@ -38,16 +25,40 @@ SoftEasyTransfer ETin, ETout;
 
 SoftwareSerial mySerial(9, 8);
 
-DHT dht(DHTPIN, DHTTYPE);
-Adafruit_BMP085 bmp;
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-
-
 int oldLevel1Status;
 int oldLevel2Status;
 
 long lastMillis;
 long lastPingMillis;
+
+//-------------------MODBUS
+#define MAX485_DE      6
+#define MAX485_RE_NEG  5
+
+// instantiate ModbusMaster object
+ModbusMaster node;
+SoftwareSerial myModSerial(7, 4);
+
+float battBhargeCurrent, bvoltage, ctemp, btemp, bremaining, lpower, lcurrent, pvvoltage, pvcurrent, pvpower;
+float stats_today_pv_volt_min, stats_today_pv_volt_max;
+uint8_t result;
+bool rs485DataReceived = true;
+const int debug = 1;
+
+
+void preTransmission()
+{
+	digitalWrite(MAX485_RE_NEG, 1);
+	digitalWrite(MAX485_DE, 1);
+}
+
+void postTransmission()
+{
+	digitalWrite(MAX485_RE_NEG, 0);
+	digitalWrite(MAX485_DE, 0);
+}
+
+//-------------------
 
 void relay1On()
 {
@@ -82,6 +93,7 @@ void setup()
 
 
 	pinMode(BUTTONPIN, INPUT);
+	myModSerial.begin(115200);
 
 	Serial.begin(9600);
 	mySerial.begin(9600);
@@ -89,32 +101,37 @@ void setup()
 	ETin.begin(details(rxdata), &mySerial);
 	ETout.begin(details(txdata), &mySerial);
 
-	relay1On();
+	relay1Off();
 	relay2Off();
 
-	dht.begin();
-
-	if (!bmp.begin()) {
-		Serial.println("Could not find a valid BMP085 sensor, check wiring!");
-	}
-
-	lcd.init();
-	lcd.backlight();
-	lcd.createChar(0, wifiChar);
-	lcd.clear();
-	lcd.print("Started");
 	// delay startup until esp started
 	Send("Status", "Started");
 	SendAll();
+
+	//-----------------
+	pinMode(MAX485_RE_NEG, OUTPUT);
+	pinMode(MAX485_DE, OUTPUT);
+	// Init in receive mode
+	digitalWrite(MAX485_RE_NEG, 0);
+	digitalWrite(MAX485_DE, 0);
+
+	// Modbus communication runs at 115200 baud
+	
+	// Modbus slave ID 1
+	node.begin(1, myModSerial);
+	// Callbacks allow us to configure the RS485 transceiver correctly
+	node.preTransmission(preTransmission);
+	node.postTransmission(postTransmission);
+	//-----------------
 }
 
 void loop()
 {
 	if (ETin.receiveData())
 	{
-		//Serial.println(rxdata.topic);
-		//Serial.println((char*)rxdata.payload);
-		//Serial.println(rxdata.length);
+		Serial.println(rxdata.topic);
+		Serial.println((char*)rxdata.payload);
+		Serial.println(rxdata.length);
 		if (strcmp(rxdata.topic, "start") == 0)
 		{
 			SendAll();
@@ -147,7 +164,9 @@ void loop()
 
 	if (millis() - lastPingMillis > 1000 || millis() < lastPingMillis)
 	{
-
+		AddressRegistry_3100();
+		AddressRegistry_311A();
+		AddressRegistry_3300();
 		lastPingMillis = millis();
 	}
 
@@ -156,88 +175,26 @@ void loop()
 		SendAll();
 		lastMillis = millis();
 	}
-	if (digitalRead(BUTTONPIN) == HIGH)
-	{
-		lcd.backlight();
-	}
-	else
-	{
-		lcd.noBacklight();
-	}
-	/* add main program code here */
-
 }
 
 void SendAll()
 {
-	lcd.setCursor(0, 0);
-	float t = dht.readTemperature();
-	float h = dht.readHumidity();
-	if (isnan(h) || isnan(t)) {
-		Serial.println("Failed to read from DHT sensor!");
-	}
-	else
-	{
-		Serial.print("Humidity: ");
-		Serial.print(h);
-		Send("status/humidity", h); 
-		Serial.print(" %\t");
-		Serial.print("Temperature: ");
-		Serial.print(t);
-		lcd.print((int)t);
-		lcd.print("C ");
-		Send("status/temperature0", t);
-		Serial.println(" *C ");
-	}
-
-
-
-	Serial.print("Temperature = ");
-	Serial.print(bmp.readTemperature());
-	Serial.println(" *C");
-	Send("status/temperature1",(int)bmp.readPressure());
-
-	Serial.print("Pressure = ");
-	Serial.print(bmp.readPressure());
-	Serial.println(" Pa");
-	Send("status/pressure", (int)bmp.readPressure());
-
-	//Serial.print("Pressure at sealevel (calculated) = ");
-	//Serial.print((int)bmp.readSealevelPressure());
-	//Serial.println(" Pa");
-
-	Send("status/inttemp", (int)GetTemp());
-
-	//int sensorValue = getVPP(VOLTPIN);
-	//// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
-	//float voltage = sensorValue *(5.0/1024.0) *5;
-	//// print out the value you read:
-	//Serial.print("Voltage ");
-	//Serial.println(voltage);
-	//Send("status/voltage", voltage);
-
-	int sensorValue = getVPP(INVOLTPIN);
-	// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
-	float voltage = sensorValue *(5.0 / 1024.0) * 5;
-	// print out the value you read:
-	Serial.print("In Voltage ");
-	Serial.println(voltage);
-	Send("status/batteryvoltage", voltage);
-
-	lcd.print(voltage);
-	lcd.print("V ");
-
-	
-	sensorValue = getVPP(AMPPIN);
+	float sensorValue = getVPP(AMPPIN);
 	// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
 	float amp = ((sensorValue *(5.0 / 1024.0)) - 2.5) / 0.066;
 	// print out the value you read:
 	Serial.print("Amper ");
 	Serial.println(amp);
 	Send("status/amper", amp);
-	lcd.print(amp);
-	lcd.print("A ");
-
+	Send("status/pvpower", pvpower);
+	Send("status/pvcurrent", pvcurrent);
+	Send("status/pvvoltage", pvvoltage);
+	Send("status/lcurrent", lcurrent);
+	Send("status/lpower", lpower);
+	Send("status/btemp", btemp);
+	Send("status/bvoltage", bvoltage);
+	Send("status/bremaining", bremaining);
+	Send("status/ctemp", ctemp);
 }
 
 void Send(char* topic, char* payload)
@@ -307,4 +264,101 @@ double GetTemp(void)
 
 	// The returned temperature is in degrees Celsius.
 	return (t);
+}
+
+void AddressRegistry_3100() {
+	result = node.readInputRegisters(0x3100, 7);
+	if (result == node.ku8MBSuccess)
+	{
+		ctemp = node.getResponseBuffer(0x11) / 100.0f;
+		if (debug == 1) {
+			Serial.println(ctemp);
+			Serial.print("Battery Voltage: ");
+		}
+		bvoltage = node.getResponseBuffer(0x04) / 100.0f;
+		if (debug == 1) {
+			Serial.println(bvoltage);
+
+		}
+		lpower = ((long)node.getResponseBuffer(0x0F) << 16 | node.getResponseBuffer(0x0E)) / 100.0f;
+		if (debug == 1) {
+			Serial.print("Load Power: ");
+			Serial.println(lpower);
+
+		}
+		lcurrent = (long)node.getResponseBuffer(0x0D) / 100.0f;
+		if (debug == 1) {
+			Serial.print("Load Current: ");
+			Serial.println(lcurrent);
+
+		}
+		pvvoltage = (long)node.getResponseBuffer(0x00) / 100.0f;
+		if (debug == 1) {
+			Serial.print("PV Voltage: ");
+			Serial.println(pvvoltage);
+
+		}
+		pvcurrent = (long)node.getResponseBuffer(0x01) / 100.0f;
+		if (debug == 1) {
+			Serial.print("PV Current: ");
+			Serial.println(pvcurrent);
+
+		}
+		pvpower = ((long)node.getResponseBuffer(0x03) << 16 | node.getResponseBuffer(0x02)) / 100.0f;
+		if (debug == 1) {
+			Serial.print("PV Power: ");
+			Serial.println(pvpower);
+		}
+		battBhargeCurrent = (long)node.getResponseBuffer(0x05) / 100.0f;
+		if (debug == 1) {
+			Serial.print("Battery Charge Current: ");
+			Serial.println(battBhargeCurrent);
+			Serial.println();
+		}
+	}
+	else {
+		rs485DataReceived = false;
+	}
+}
+
+void AddressRegistry_311A() {
+	result = node.readInputRegisters(0x311A, 2);
+	if (result == node.ku8MBSuccess)
+	{
+		bremaining = node.getResponseBuffer(0x00) / 1.0f;
+		if (debug == 1) {
+			Serial.print("Battery Remaining %: ");
+			Serial.println(bremaining);
+
+		}
+		btemp = node.getResponseBuffer(0x01) / 100.0f;
+		if (debug == 1) {
+			Serial.print("Battery Temperature: ");
+			Serial.println(btemp);
+			Serial.println();
+		}
+	}
+	else {
+		rs485DataReceived = false;
+	}
+}
+
+void AddressRegistry_3300() {
+	result = node.readInputRegisters(0x3300, 2);
+	if (result == node.ku8MBSuccess)
+	{
+		stats_today_pv_volt_max = node.getResponseBuffer(0x00) / 100.0f;
+		if (debug == 1) {
+			Serial.print("Stats Today PV Voltage MAX: ");
+			Serial.println(stats_today_pv_volt_max);
+		}
+		stats_today_pv_volt_min = node.getResponseBuffer(0x01) / 100.0f;
+		if (debug == 1) {
+			Serial.print("Stats Today PV Voltage MIN: ");
+			Serial.println(stats_today_pv_volt_min);
+		}
+	}
+	else {
+		rs485DataReceived = false;
+	}
 }
