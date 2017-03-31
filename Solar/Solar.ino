@@ -127,6 +127,7 @@ void setup()
 
 void loop()
 {
+	mySerial.listen();
 	if (ETin.receiveData())
 	{
 		Serial.println(rxdata.topic);
@@ -164,14 +165,16 @@ void loop()
 
 	if (millis() - lastPingMillis > 1000 || millis() < lastPingMillis)
 	{
-		AddressRegistry_3100();
-		AddressRegistry_311A();
-		AddressRegistry_3300();
+
 		lastPingMillis = millis();
 	}
 
 	if (millis() - lastMillis > 15000 || millis() < lastMillis)
 	{
+		myModSerial.listen();
+		AddressRegistry_3100();
+		AddressRegistry_311A();
+		AddressRegistry_3300();
 		SendAll();
 		lastMillis = millis();
 	}
@@ -194,7 +197,9 @@ void SendAll()
 	Send("status/btemp", btemp);
 	Send("status/bvoltage", bvoltage);
 	Send("status/bremaining", bremaining);
+	Send("status/battBhargeCurrent", battBhargeCurrent);
 	Send("status/ctemp", ctemp);
+	
 }
 
 void Send(char* topic, char* payload)
@@ -268,6 +273,7 @@ double GetTemp(void)
 
 void AddressRegistry_3100() {
 	result = node.readInputRegisters(0x3100, 7);
+	Serial.print(result);
 	if (result == node.ku8MBSuccess)
 	{
 		ctemp = node.getResponseBuffer(0x11) / 100.0f;

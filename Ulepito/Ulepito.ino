@@ -2,7 +2,10 @@
 #include <SoftwareSerial.h>
 #include <SoftEasyTransfer.h>
 
-
+/*
+Level Jack 3.5 common wire the (0) pin of the jack
+Flow rate Jack 3.5 (0)<->(0) (middle)<->(+5) (Top)<->(Data)
+*/
 
 struct DATA_STRUCTURE {
 	char topic[100];
@@ -60,6 +63,8 @@ void pumpOn()
 {
 	digitalWrite(relayPin, LOW);
 	Send("status/pump", "ON");
+	flowRpm1 = 0;
+	flowRpm2 = 0;
 }
 
 void pumpOff()
@@ -190,6 +195,11 @@ void SendAll()
 	else
 		Send("status/level2", "OFF");
 	
+	if (digitalRead(relayPin) == HIGH)
+		Send("status/pump", "OFF");
+	else
+		Send("status/pump", "ON");
+
 	Send("status/sonar1", sonar1.ping_cm());
 	Send("status/sonar2", sonar2.ping_cm());
 	Send("status/inttemp", (int)GetTemp());
