@@ -94,7 +94,7 @@ extern "C" void __cxa_pure_virtual() {;}
 #define interrupts() sei()
 #define noInterrupts() cli()
 
-#include "Relay1.ino"
-#include "Settings.ino"
-#include "WifiUtil.ino"
+#include "Relay2.ino"
+#include "..\Relay1\Settings.ino"
+#include "..\Relay1\WifiUtil.ino"
 #endif

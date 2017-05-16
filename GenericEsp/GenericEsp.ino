@@ -56,7 +56,11 @@ void reconnect() {
 	while (!client.connected()) {
 		//Serial.print("Attempting MQTT connection...");
 		// Attempt to connect
-		if (client.connect(settings.clientId)) {
+		message_buff[0] = 0;
+		strcat(message_buff, settings.clientId);
+		strcat(message_buff, "/status");
+
+		if (client.connect(settings.clientId, message_buff, 0, true, "Started")) {
 			//Serial.println("connected");
 			// ... and subscribe to topic
 			message_buff[0] = 0;
@@ -131,7 +135,7 @@ void loop()
 				strcat(message_buff, settings.clientId);
 				strcat(message_buff, "/");
 				strcat(message_buff, rxdata.topic);
-				client.publish(message_buff, rxdata.payload, rxdata.length);
+				client.publish(message_buff, rxdata.payload, rxdata.length, true);
 			}
 		}
 	}

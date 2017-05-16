@@ -42,8 +42,10 @@ void handleRoot() {
 	s += "<p>";
 	s += "<a href=\"/restart\">Restart device</a>";
 	s += "<HR>";
-	s += "<button  onclick=\"httpGet('/ledon')\">Relay On</button><br><br>";
-	s += "<button  onclick=\"httpGet('/ledoff')\">Relay Off</button>";
+	s += "<button  onclick=\"httpGet('/relay1on')\">Relay 1 On</button><br><br>";
+	s += "<button  onclick=\"httpGet('/relay1off')\">Relay 1 Off</button><br><br>";
+	s += "<button  onclick=\"httpGet('/relay2on')\">Relay 2 On</button><br><br>";
+	s += "<button  onclick=\"httpGet('/relay2off')\">Relay 2 Off</button><br><br>";
 	s += "<HR>";
 	s += "Last error :"+last_error;
 	s += "</body>";
@@ -127,8 +129,11 @@ void launchWeb()
 		Serial.println("MDNS responder started");
 	}
 
-	server.on("/ledon", LedOn);
-	server.on("/ledoff", LedOff);
+	server.on("/relay1on", Relay1On);
+	server.on("/relay1off", Relay1Off);
+	server.on("/relay2on", Relay2On);
+	server.on("/relay2off", Relay2Off);
+
 	server.on("/", handleRoot);
 	server.on("/restart", []() { ESP.restart(); });
 	server.on("/a", handleSettings);

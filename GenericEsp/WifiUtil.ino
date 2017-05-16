@@ -42,7 +42,7 @@ void handleRoot() {
 	s += "<label>Client Id: </label><input name='clientid' length=32 value=\"" + String(settings.clientId) + "\"><br><br><input type='submit'></form>";
 	s += "<p>";
 	s += "<a href=\"/restart\">Restart device</a><br>";
-	s += "<a href=\"/update\">Update firmware</a>";
+	s += "<a href=\"/update\">Update firmware</a><br>";
 	//s += "<HR>";
 	//s += "<button  onclick=\"httpGet('/ledon')\">Relay On</button><br><br>";
 	//s += "<button  onclick=\"httpGet('/ledoff')\">Relay Off</button>";

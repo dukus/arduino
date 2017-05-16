@@ -220,6 +220,7 @@ void Send(char* topic, int payload)
 	char intStr[3];
 	itoa(payload, intStr, 10);
 	Send(topic, intStr);
+	Serial.println(topic);
 }
 
 double GetTemp(void)
