@@ -26,16 +26,14 @@
   Previous contributions by Eric Lowry, Jim Schimpf and Tom Harkaway
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef BOUNCE_LOCK
-#error You are using the invalid BOUNCE_LOCK-OUT define. Please update your sources to use BOUNCE_LOCK_OUT
-#endif
+#ifndef Bounce2_h
+#define Bounce2_h
 
 // Uncomment the following line for "LOCK-OUT" debounce method
 //#define BOUNCE_LOCK_OUT
 
-
-#ifndef Bounce2_h
-#define Bounce2_h
+// Uncomment the following line for "BOUNCE_WITH_PROMPT_DETECTION" debounce method
+//#define BOUNCE_WITH_PROMPT_DETECTION
 
 #include <inttypes.h>
 
@@ -47,6 +45,9 @@ class Bounce
 
     // Attach to a pin (and also sets initial state)
     void attach(int pin);
+    
+    // Attach to a pin (and also sets initial state) and sets pin to mode (INPUT/INPUT_PULLUP/OUTPUT)
+    void attach(int pin, int mode);
 
     // Sets the debounce interval
     void interval(uint16_t interval_millis);
@@ -64,6 +65,14 @@ class Bounce
 
     // Returns the rising pin state
     bool rose();
+
+    // Partial compatibility for programs written with Bounce version 1
+    bool risingEdge() { return rose(); }
+    bool fallingEdge() { return fell(); }
+    Bounce(uint8_t pin, unsigned long interval_millis ) : Bounce() {
+        attach(pin);
+        interval(interval_millis);
+    }
 
  protected:
     unsigned long previous_millis;

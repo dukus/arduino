@@ -1,3 +1,4 @@
+#include <OneButton.h>
 #include "WifiUtil.h"
 #include "Settings.h"
 #include <PubSubClient.h>
@@ -8,11 +9,15 @@
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
 
+
 #define RELAY1PIN 12
-#define RELAY2PIN 13 
+#define RELAY2PIN 13
+#define BUTTONPIN 14
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+OneButton button(BUTTONPIN, false);
+
 
 int wifiMode = 0;
 const int led = 02;
@@ -156,20 +161,39 @@ void reconnect() {
 	}
 }
 
+void doubleclick(void)
+{
+	Relay1On();
+	Relay2Off();
+}
+
+void click(void)
+{
+	Relay1Off();
+	Relay2Off();
+}
+
+void longclick(void)
+{
+	Relay1On();
+	Relay2On();
+}
 
 void setup(void) {
 	pinMode(led, OUTPUT);
     pinMode(RELAY1PIN, OUTPUT);
 	pinMode(RELAY2PIN, OUTPUT);
+	pinMode(BUTTONPIN, INPUT);
+
+	button.attachDoubleClick(doubleclick);
+	button.attachClick(click);
+	button.attachDuringLongPress(longclick);
 
 	Relay1Off();
 	Relay2Off();
 	EEPROM.begin(512);
 	Serial.begin(115200);
 	loadConfig();
-
-	Serial.println(settings.ssid);
-	Serial.println(settings.pass);
 
 	WiFi.begin(settings.ssid, settings.pass);
 	Serial.println("");
@@ -194,6 +218,7 @@ void setup(void) {
 
 void loop(void) {
 	//
+	button.tick();
 	if (wifiMode == 0) {
 		server.handleClient();
 		if (millis()>1000 * 10 * 60)
@@ -202,6 +227,8 @@ void loop(void) {
 	else
 	{
 		if (!client.connected()) {
+			Relay1Off();
+			Relay2Off();
 			reconnect();
 		}
 		if (wifiMode != 0)
