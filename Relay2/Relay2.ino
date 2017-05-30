@@ -8,6 +8,11 @@
 #include <ESP8266mDNS.h>
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
+/*
+Two way relay with one contact with 220v anda 12 v a single button single click stop all, 
+double click start relay 1 long press start both relays
+*/
+
 
 
 #define RELAY1PIN 12
@@ -127,7 +132,11 @@ void reconnect() {
 	while (!client.connected()) {
 		Serial.print("Attempting MQTT connection...");
 		// Attempt to connect
-		if (client.connect(settings.clientId)) {
+		message_buff[0] = 0;
+		strcat(message_buff, settings.clientId);
+		strcat(message_buff, "/status");
+
+		if (client.connect(settings.clientId,message_buff,0,true,"Disconnected")) {
 			Serial.println("connected");
 			// ... and subscribe to topic
 			message_buff[0] = 0;
@@ -138,7 +147,7 @@ void reconnect() {
 			message_buff[0] = 0;
 			strcat(message_buff, settings.clientId);
 			strcat(message_buff, "/status");
-			client.publish(message_buff, "Started");
+			client.publish(message_buff, "Started",true);
 			Relay1Off();
 			Relay2Off();
 		}
@@ -149,6 +158,8 @@ void reconnect() {
 			{
 				wifiMode = 0;
 				last_error = "MQTT connection timout !";
+				Relay1Off();
+				Relay2Off();
 				launchWeb();
 				return;
 			}
