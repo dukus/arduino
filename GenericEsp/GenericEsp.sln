@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Meteo", "..\Meteo\Meteo.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Relay2", "..\Relay2\Relay2.vcxproj", "{3CA2027C-3D8C-4DDD-8246-73FD1FE122D3}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Relay3", "..\Relay3\Relay3.vcxproj", "{CBDDEEE6-37D1-4E38-8E47-F16F9B0F0717}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -45,6 +47,10 @@ Global
 		{3CA2027C-3D8C-4DDD-8246-73FD1FE122D3}.Debug|x86.Build.0 = Debug|Win32
 		{3CA2027C-3D8C-4DDD-8246-73FD1FE122D3}.Release|x86.ActiveCfg = Release|Win32
 		{3CA2027C-3D8C-4DDD-8246-73FD1FE122D3}.Release|x86.Build.0 = Release|Win32
+		{CBDDEEE6-37D1-4E38-8E47-F16F9B0F0717}.Debug|x86.ActiveCfg = Debug|Win32
+		{CBDDEEE6-37D1-4E38-8E47-F16F9B0F0717}.Debug|x86.Build.0 = Debug|Win32
+		{CBDDEEE6-37D1-4E38-8E47-F16F9B0F0717}.Release|x86.ActiveCfg = Release|Win32
+		{CBDDEEE6-37D1-4E38-8E47-F16F9B0F0717}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
